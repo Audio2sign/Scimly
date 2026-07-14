@@ -462,12 +462,6 @@
           <div class="drop-hint">Or drag &amp; drop a .csv file onto the box above, or use "Import CSV" above.</div>
           <div class="error-box" id="csvErrorWs"></div>
           <div class="actions" style="margin-top:14px;">
-            <button class="btn primary" id="btnRunWs">Run Analysis</button>
-            <button class="btn" id="btnDemoWs">Load Demo Data</button>
-            <button class="btn" id="btnMockWs" title="Generates 500 randomized, messy rows — nothing real, regenerates every click">Generate Mock Data (500)</button>
-            <label class="btn" for="csvFileInputWs" style="cursor:pointer;">Import CSV</label>
-            <input type="file" id="csvFileInputWs" accept=".csv,text/csv" style="display:none;">
-            <button class="btn" id="btnConnectGoogleWs">Connect Google Workspace</button>
             <button class="btn ghost" id="btnClearWs">Clear workspace</button>
           </div>
         </div>
@@ -1274,7 +1268,7 @@ ex-employee@example.com,Editor,inactive,2025-06-01,Sales,no,,vp-sales@example.co
     });
   });
 
-  ['csvFileInput','csvFileInputWs'].forEach(id=>{
+  ['csvFileInput'].forEach(id=>{
     const el = document.getElementById(id);
     if(!el) return;
     el.addEventListener('change', e=>{
@@ -1378,13 +1372,9 @@ ex-employee@example.com,Editor,inactive,2025-06-01,Sales,no,,vp-sales@example.co
   }
 
   document.getElementById('btnRun').addEventListener('click', runAnalysis);
-  document.getElementById('btnRunWs').addEventListener('click', runAnalysis);
   document.getElementById('btnDemo').addEventListener('click', loadDemo);
-  document.getElementById('btnDemoWs').addEventListener('click', loadDemo);
   document.getElementById('btnMock').addEventListener('click', loadMock);
-  document.getElementById('btnMockWs').addEventListener('click', loadMock);
   document.getElementById('btnConnectGoogle').addEventListener('click', connectGoogleWorkspace);
-  document.getElementById('btnConnectGoogleWs').addEventListener('click', connectGoogleWorkspace);
   document.getElementById('googleConfigClose').addEventListener('click', closeGoogleConfigModal);
   document.getElementById('googleConfigCancel').addEventListener('click', closeGoogleConfigModal);
   document.getElementById('googleConfigSave').addEventListener('click', saveGoogleConfigModal);
