@@ -2,7 +2,7 @@
 
 ## Target price
 
-**$2,000–$6,000**, sold as a one-time transfer of the source code and
+**$3,000–$7,000**, sold as a one-time transfer of the source code and
 accompanying materials.
 
 ## Why this range
@@ -21,23 +21,31 @@ accompanying materials.
   readiness score, risk flags, and waste calculation work at realistic scale
   immediately — without needing their own SCIM/HR export and without the
   seller needing to fabricate or hand over any real-looking data.
-- There's no backend, no auth, no persistence, and no integrations yet
-  (e.g. no live SCIM/IdP connector) — a buyer should expect to invest
-  additional engineering time before reselling or operating it as a hosted
-  product. That caps the price below a package with those already built.
+- It now includes a **live Google Workspace directory sync** ("Connect
+  Google Workspace"), using the buyer's own OAuth Client ID — this closes
+  the single biggest gap called out below (no live SCIM/IdP connector) and
+  is a genuine differentiator from a plain CSV-upload tool. This alone
+  supports pricing meaningfully above the bottom of the range.
+- There's still no backend, no auth for the app itself, and no persistence
+  beyond the current browser tab — a buyer wanting multi-user access or a
+  hosted product should still expect to invest engineering time there. Live
+  sync for Microsoft Entra ID / Okta is also not built yet (Google only).
+  That still caps the price below a package with those already built.
 
 ## Where in the range to land
 
-- **Toward $2,000** if sold as-is, with only the files in this package and
+- **Toward $3,000** if sold as-is, with only the files in this package and
   no additional customization, screenshots, or positioning work from the
   seller.
-- **Toward $4,000** if the seller adds a short screen-recorded demo (the
+- **Toward $5,000** if the seller adds a short screen-recorded demo (the
   built-in **Generate Mock Data** button makes this easy to produce without
-  needing a real dataset), polishes the sample data with a more realistic
-  dataset, and writes a one-page pitch aimed at the specific buyer segment.
-- **Toward $6,000** if the seller can also show any of: a working hosted
+  needing a real dataset, and a quick clip of **Connect Google Workspace**
+  demonstrates the live-sync feature), polishes the sample data with a more
+  realistic dataset, and writes a one-page pitch aimed at the specific buyer
+  segment.
+- **Toward $7,000** if the seller can also show any of: a working hosted
   demo, interest from a specific buyer (e.g. a compliance consultant who
-  has used it), or a clear plan for the backend/integration work already
+  has used it), or a clear plan for the remaining backend/multi-IdP work
   scoped out in `TRANSFER_NOTES.md`.
 
 ## What NOT to claim

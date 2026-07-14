@@ -11,9 +11,9 @@ investing in a larger identity/admin platform.
 
 ## What it does
 
-- Parses a CSV of user access records entirely in the browser (nothing is
-  uploaded anywhere). Paste it in, or drag and drop a `.csv` file directly
-  onto the input box.
+- Parses a CSV of user access records entirely in the browser — a pasted or
+  dropped CSV never leaves your machine. (Google Workspace sync, described
+  below, is a separate, optional path that does talk to Google's API.)
 - **Generate Mock Data** button produces a fresh, randomized 500-row CSV on
   every click — no real data required to see the tool work at realistic
   scale. The generated data deliberately includes the same messy edge cases
@@ -86,6 +86,35 @@ read the whole file:
 - Paid inactive seat: +15 (waste = that user's monthly license cost)
 - Risk is capped at 100 per user
 - Readiness = 100 − average risk across all analyzed rows
+
+## Google Workspace sync (optional)
+
+Instead of exporting and pasting a CSV, you can click **Connect Google
+Workspace** to pull your directory live via Google's Admin SDK
+(`admin.directory.user.readonly` scope).
+
+- This uses **your own** Google OAuth Client ID — the app has no Client ID
+  of its own baked in, and no client secret is ever needed (token-model
+  OAuth, entirely in the browser).
+- Clicking **Connect Google Workspace** opens a small popup asking for your
+  Client ID. It's pre-filled if you've saved one before. From there you can
+  connect, change the ID, or clear it — this popup is the single entry
+  point for all of that, so there's no separate settings icon to hunt for.
+- Setup (one-time, per Google Cloud project):
+  1. Open the [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
+  2. Create an OAuth 2.0 Client ID of type **Web application**
+  3. Add the origin you're serving this app from (e.g.
+     `http://localhost` or your hosting domain) to **Authorized JavaScript
+     origins**
+  4. Paste the Client ID into the popup opened by **Connect Google
+     Workspace**
+- Once connected, the browser talks directly to `accounts.google.com` and
+  Google's API — there is no server of ours in the middle, and nothing
+  about your directory passes through any backend this project owns.
+- The **admin.directory.user.readonly** scope requires the connected
+  Google account to have rights to read the Workspace directory (typically
+  a Workspace admin account) and requires Admin SDK API access to be
+  enabled on that Google Cloud project.
 
 ## Project structure
 

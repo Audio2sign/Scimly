@@ -6,6 +6,8 @@
 <title>Scimly — Access Review & SCIM Readiness</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<!-- Google Identity Services — required for the "Connect Google Workspace" feature (Token Model flow, no client secret needed) -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
   :root{
     --ink:#0B0E14;
@@ -205,6 +207,26 @@
   }
   .error-box.show{display:block;}
 
+  /* google client id modal */
+  .modal-overlay{
+    display:none;position:fixed;inset:0;background:rgba(11,14,20,0.55);
+    align-items:center;justify-content:center;z-index:100;padding:20px;
+  }
+  .modal-overlay.show{display:flex;}
+  .modal-card{
+    background:var(--card);border-radius:var(--radius);border:1px solid var(--border);
+    box-shadow:0 20px 60px -20px rgba(11,14,20,0.5);width:100%;max-width:480px;
+    padding:24px 26px;max-height:90vh;overflow-y:auto;
+  }
+  .modal-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:6px;}
+  .modal-head h2{font-family:var(--display);font-size:18px;font-weight:700;margin:0;letter-spacing:-.01em;}
+  .modal-x{all:unset;cursor:pointer;font-size:20px;line-height:1;color:var(--text-faint);padding:2px 4px;}
+  .modal-x:hover{color:var(--text);}
+  .modal-copy{font-size:13px;line-height:1.65;color:var(--text-muted);margin:6px 0 4px;}
+  .modal-hint{font-size:11.5px;line-height:1.65;color:var(--text-faint);margin-top:8px;}
+  .modal-hint a{color:var(--accent-dark);font-weight:600;text-decoration:none;}
+  .modal-hint a:hover{text-decoration:underline;}
+
   /* table */
   .table-wrap{overflow-x:auto;}
   table{width:100%;border-collapse:collapse;font-size:12.6px;}
@@ -319,6 +341,7 @@
           Import CSV
         </label>
         <input type="file" id="csvFileInput" accept=".csv,text/csv" style="display:none;">
+        <button class="btn" id="btnConnectGoogle">Connect Google Workspace</button>
         <button class="btn" id="btnExport">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0-4-4m4 4 4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
           Export Report
@@ -361,7 +384,7 @@
 
       <div class="split-grid">
         <div class="card">
-          <div class="card-head"><h2>Input Workspace</h2><span class="tag gray">Local only</span></div>
+          <div class="card-head"><h2>Input Workspace</h2><span class="tag gray">No server — CSV local, Google sync uses your own OAuth</span></div>
           <label class="field-label">User Access CSV</label>
           <textarea id="csvInput" rows="9" spellcheck="false" placeholder="email,role,status,last_login,department,mfa,scim_external_id,manager,monthly_license_cost"></textarea>
           <div class="drop-hint">Or drag &amp; drop a .csv file onto the box above, or use "Import CSV" above.</div>
@@ -427,7 +450,7 @@
     <section class="view" id="view-workspace">
       <div class="split-grid" style="grid-template-columns:1.3fr .7fr;">
         <div class="card">
-          <div class="card-head"><h2>CSV Workspace</h2><span class="tag gray">Local only, nothing leaves the browser</span></div>
+          <div class="card-head"><h2>CSV Workspace</h2><span class="tag gray">No server — CSV stays local, Google sync uses your own OAuth</span></div>
           <label class="field-label">Required columns</label>
           <div class="hint" style="margin-top:0;">
             <code>email, role, status, last_login, department, mfa, scim_external_id, manager, monthly_license_cost</code><br>
@@ -444,6 +467,7 @@
             <button class="btn" id="btnMockWs" title="Generates 500 randomized, messy rows — nothing real, regenerates every click">Generate Mock Data (500)</button>
             <label class="btn" for="csvFileInputWs" style="cursor:pointer;">Import CSV</label>
             <input type="file" id="csvFileInputWs" accept=".csv,text/csv" style="display:none;">
+            <button class="btn" id="btnConnectGoogleWs">Connect Google Workspace</button>
             <button class="btn ghost" id="btnClearWs">Clear workspace</button>
           </div>
         </div>
@@ -543,8 +567,41 @@
       </div>
     </section>
 
-    <footer class="foot">Runs entirely in your browser. Nothing you paste here is uploaded anywhere.</footer>
+    <footer class="foot">No backend of ours is involved — pasted CSVs never leave your browser, and Google Workspace sync (if you use it) talks directly to Google using your own OAuth credentials.</footer>
   </main>
+</div>
+
+<!-- ============ GOOGLE CLIENT ID MODAL ============ -->
+<div class="modal-overlay" id="googleConfigOverlay">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h2>Connect Google Workspace</h2>
+      <button class="modal-x" id="googleConfigClose" aria-label="Close">&times;</button>
+    </div>
+    <p class="modal-copy">
+      To pull your directory data, this app needs your own Google OAuth
+      <strong>Client ID</strong>. It's created for free in a couple of
+      minutes in the Google Cloud Console and is not a secret &mdash; it's
+      safe to paste here.
+    </p>
+    <label class="field-label" style="margin-top:4px;">Google OAuth Client ID</label>
+    <input type="text" id="googleClientIdInput" placeholder="123456789-abcXYZ.apps.googleusercontent.com" autocomplete="off" spellcheck="false">
+    <div class="modal-hint">
+      Stored only in this browser (never sent anywhere except directly to
+      Google). Need one? In
+      <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener">Google Cloud Console</a>
+      &rarr; Credentials &rarr; Create Credentials &rarr; OAuth client ID
+      &rarr; type <strong>Web application</strong> &rarr; add this site's
+      origin under Authorized JavaScript origins &rarr; also enable the
+      <strong>Admin SDK API</strong> for the project.
+    </div>
+    <div class="error-box" id="googleConfigError"></div>
+    <div class="actions" style="margin-top:16px;justify-content:flex-end;">
+      <button class="btn ghost" id="googleConfigClear">Clear saved ID</button>
+      <button class="btn" id="googleConfigCancel">Cancel</button>
+      <button class="btn primary" id="googleConfigSave">Save &amp; Connect</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -662,6 +719,214 @@ ex-employee@example.com,Editor,inactive,2025-06-01,Sales,no,,vp-sales@example.co
     }
 
     return header + '\n' + rows.join('\n');
+  }
+
+  /* ---------------- Google Workspace Integration ---------------- */
+  // Uses Google Identity Services (GIS) "Token Model" — Google's recommended
+  // flow for browser-only apps with no backend. Unlike the classic
+  // Authorization Code + PKCE flow, this never exchanges a code for a token
+  // over a POST request, so it never needs a client_secret (Google's
+  // Authorization Code flow requires one for "Web application" client types
+  // even with PKCE, which would be unsafe to embed in a static site — this
+  // flow avoids that problem entirely).
+  //
+  // The Client ID is NOT hardcoded in this file. A buyer/operator pastes
+  // their own Client ID into the "Connect Google Workspace" popup the first
+  // time they use the feature; it's saved to this browser's localStorage
+  // (key below) so they don't need to touch the source code at all. This
+  // avoids a non-technical buyer editing raw JS and risking a typo that
+  // breaks the file.
+  //
+  // Setup a buyer/operator needs to do once, in Google Cloud Console:
+  //   1. Create an OAuth 2.0 Client ID of type "Web application".
+  //   2. Under "Authorized JavaScript origins", add this site's exact
+  //      origin (e.g. https://audio2sign.github.io) — NOT a redirect URI,
+  //      this flow doesn't redirect.
+  //   3. Enable the "Admin SDK API" for the project.
+  //   4. Paste the Client ID into the popup opened by "Connect Google
+  //      Workspace" (also linked from the popup itself).
+  //   5. As the Workspace admin, either test with your own account, or have
+  //      your org's admin allow-list this app for the sensitive
+  //      admin.directory.user.readonly scope before it will work for them.
+  const GOOGLE_SCOPE = 'https://www.googleapis.com/auth/admin.directory.user.readonly';
+  const GOOGLE_CLIENT_ID_STORAGE_KEY = 'scimly_google_client_id';
+
+  let googleTokenClient = null;
+  let googleTokenClientForId = null; // which client ID the cached token client was built for
+  let googleAutoConnectAfterSave = false; // whether "Save" should immediately trigger the auth popup
+
+  function getSavedGoogleClientId() {
+    try { return (localStorage.getItem(GOOGLE_CLIENT_ID_STORAGE_KEY) || '').trim(); }
+    catch (e) { return ''; }
+  }
+
+  function saveGoogleClientId(id) {
+    try { localStorage.setItem(GOOGLE_CLIENT_ID_STORAGE_KEY, id); }
+    catch (e) { /* localStorage unavailable — private browsing, etc. */ }
+  }
+
+  function clearGoogleClientId() {
+    try { localStorage.removeItem(GOOGLE_CLIENT_ID_STORAGE_KEY); }
+    catch (e) {}
+    googleTokenClient = null;
+    googleTokenClientForId = null;
+  }
+
+  function getGoogleTokenClient(clientId) {
+    if (googleTokenClient && googleTokenClientForId === clientId) return googleTokenClient;
+    if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) {
+      throw new Error('Google Identity Services failed to load. Check your internet connection and try again.');
+    }
+    googleTokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: clientId,
+      scope: GOOGLE_SCOPE,
+      callback: onGoogleTokenResponse
+    });
+    googleTokenClientForId = clientId;
+    return googleTokenClient;
+  }
+
+  function connectGoogleWorkspace() {
+    showError(null);
+    // Always show the popup — pre-filled with the saved Client ID if there is
+    // one, blank if not. This is now the single entry point for viewing,
+    // changing, clearing, or using the saved connection.
+    openGoogleConfigModal({ autoConnect: true });
+  }
+
+  function doGoogleAuth(clientId) {
+    try {
+      const client = getGoogleTokenClient(clientId);
+      client.requestAccessToken({ prompt: 'consent' });
+    } catch (err) {
+      showError(err.message || String(err));
+    }
+  }
+
+  /* ---- Google Client ID popup ---- */
+  function openGoogleConfigModal(opts){
+    opts = opts || {};
+    googleAutoConnectAfterSave = !!opts.autoConnect;
+    const input = document.getElementById('googleClientIdInput');
+    input.value = getSavedGoogleClientId();
+    const errEl = document.getElementById('googleConfigError');
+    errEl.textContent = ''; errEl.classList.remove('show');
+    document.getElementById('googleConfigOverlay').classList.add('show');
+    setTimeout(()=>input.focus(), 0);
+  }
+
+  function closeGoogleConfigModal(){
+    document.getElementById('googleConfigOverlay').classList.remove('show');
+    googleAutoConnectAfterSave = false;
+  }
+
+  function saveGoogleConfigModal(){
+    const input = document.getElementById('googleClientIdInput');
+    const errEl = document.getElementById('googleConfigError');
+    const val = input.value.trim();
+    if (!val) {
+      errEl.textContent = 'Paste your Google OAuth Client ID first.';
+      errEl.classList.add('show');
+      return;
+    }
+    if (!/\.apps\.googleusercontent\.com$/.test(val)) {
+      errEl.textContent = 'That doesn\'t look like a Google Client ID — it should end with .apps.googleusercontent.com.';
+      errEl.classList.add('show');
+      return;
+    }
+    saveGoogleClientId(val);
+    googleTokenClient = null; // force re-init in case the ID changed
+    googleTokenClientForId = null;
+    const shouldConnect = googleAutoConnectAfterSave;
+    closeGoogleConfigModal();
+    if (shouldConnect) doGoogleAuth(val);
+  }
+
+  async function onGoogleTokenResponse(tokenResponse){
+    if (tokenResponse.error) {
+      showError(`Google authentication failed: ${tokenResponse.error}. Please try again.`);
+      return;
+    }
+    const accessToken = tokenResponse.access_token;
+    if (!accessToken) {
+      showError('Google did not return an access token. Please try again.');
+      return;
+    }
+
+    try {
+      showError('Fetching users from Google Workspace…');
+      const users = await fetchGoogleWorkspaceUsers(accessToken);
+      if (users.length === 0) {
+        showError('No users found in your Google Workspace directory.');
+        return;
+      }
+
+      const csvString = mapGoogleUsersToCsv(users);
+      csvBoxes.forEach(id => document.getElementById(id).value = csvString);
+      hasImported = true;
+      renderChecklist();
+      runAnalysis();
+      showError(null);
+      document.querySelector('button[data-view="dashboard"]').click();
+
+    } catch (err) {
+      let message = err.message || String(err);
+      if (message.includes('accessNotConfigured') || message.includes('insufficient_permission') || message.includes('forbidden')) {
+        message = 'Permission denied. Your Google Workspace admin may need to grant this app access to the Admin SDK Directory API. See console for details.';
+      }
+      showError(`Error fetching Google Workspace data: ${message}`);
+      console.error(err);
+    }
+  }
+
+  async function fetchGoogleWorkspaceUsers(accessToken) {
+    let allUsers = [];
+    let pageToken = null;
+    do {
+      const apiUrl = new URL('https://admin.googleapis.com/admin/directory/v1/users');
+      apiUrl.searchParams.set('customer', 'my_customer');
+      apiUrl.searchParams.set('viewType', 'admin_view');
+      apiUrl.searchParams.set('maxResults', '500');
+      if (pageToken) apiUrl.searchParams.set('pageToken', pageToken);
+
+      const response = await fetch(apiUrl.toString(), { headers: { 'Authorization': `Bearer ${accessToken}` } });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error?.message || 'API request failed.');
+      }
+      const data = await response.json();
+      if (data.users) allUsers = allUsers.concat(data.users);
+      pageToken = data.nextPageToken;
+    } while (pageToken);
+    return allUsers;
+  }
+
+  function mapGoogleUsersToCsv(users) {
+    const header = REQUIRED_COLS.join(',');
+    const csvRows = users.map(user => {
+      const email = user.primaryEmail || '';
+      const role = user.isAdmin ? 'Admin' : 'Viewer';
+      const status = user.suspended ? 'inactive' : 'active';
+      let lastLogin = '';
+      if (user.lastLoginTime && !user.lastLoginTime.startsWith('1970-01-01')) {
+        try { lastLogin = new Date(user.lastLoginTime).toISOString().slice(0, 10); } catch (e) {}
+      }
+      const department = (user.organizations && user.organizations[0] && user.organizations[0].department) ? user.organizations[0].department : '';
+      const mfa = user.isEnrolledIn2Sv ? 'yes' : 'no';
+      const scimId = (user.externalIds && user.externalIds.length > 0) ? user.externalIds[0].value : '';
+      const managerRel = user.relations ? user.relations.find(r => r.type === 'manager') : null;
+      const manager = managerRel ? managerRel.value : '';
+      const monthlyCost = '';
+
+      const escapeCsv = (val) => {
+        const str = String(val == null ? '' : val);
+        if (/[",\n]/.test(str)) return `"${str.replace(/"/g, '""')}"`;
+        return str;
+      };
+
+      return [email, role, status, lastLogin, department, mfa, scimId, manager, monthlyCost].map(escapeCsv).join(',');
+    });
+    return [header, ...csvRows].join('\n');
   }
 
   /* ---------------- utils ---------------- */
@@ -1118,6 +1383,24 @@ ex-employee@example.com,Editor,inactive,2025-06-01,Sales,no,,vp-sales@example.co
   document.getElementById('btnDemoWs').addEventListener('click', loadDemo);
   document.getElementById('btnMock').addEventListener('click', loadMock);
   document.getElementById('btnMockWs').addEventListener('click', loadMock);
+  document.getElementById('btnConnectGoogle').addEventListener('click', connectGoogleWorkspace);
+  document.getElementById('btnConnectGoogleWs').addEventListener('click', connectGoogleWorkspace);
+  document.getElementById('googleConfigClose').addEventListener('click', closeGoogleConfigModal);
+  document.getElementById('googleConfigCancel').addEventListener('click', closeGoogleConfigModal);
+  document.getElementById('googleConfigSave').addEventListener('click', saveGoogleConfigModal);
+  document.getElementById('googleConfigClear').addEventListener('click', ()=>{
+    clearGoogleClientId();
+    document.getElementById('googleClientIdInput').value = '';
+    const errEl = document.getElementById('googleConfigError');
+    errEl.textContent = 'Saved Client ID cleared.';
+    errEl.classList.add('show');
+  });
+  document.getElementById('googleConfigOverlay').addEventListener('click', (e)=>{
+    if (e.target.id === 'googleConfigOverlay') closeGoogleConfigModal();
+  });
+  document.getElementById('googleClientIdInput').addEventListener('keydown', (e)=>{
+    if (e.key === 'Enter') saveGoogleConfigModal();
+  });
   document.getElementById('btnExport').addEventListener('click', exportReport);
   document.getElementById('btnDownloadReport').addEventListener('click', exportReport);
   document.getElementById('btnExportCsv').addEventListener('click', exportCSV);

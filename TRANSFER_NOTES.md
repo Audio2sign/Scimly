@@ -8,8 +8,12 @@ Notes for whoever takes this project over after purchase.
   accounts, no payment processing.
 - Ships with a 14-row demo CSV (`sample-data.csv`) used by the "Load Demo
   Data" button — this is illustrative data only, not real user records.
-- Nothing persists between browser sessions; closing the tab clears the
-  workspace. There is no backend to lose data from.
+- The CSV, analysis results, and generated report don't persist between
+  browser sessions; closing the tab clears the workspace. There is no
+  backend to lose that data from. The one exception: if you use **Connect
+  Google Workspace**, your OAuth Client ID is saved to this browser's
+  `localStorage` so you don't have to re-enter it every time — that's the
+  only thing this app stores locally.
 - Pre-revenue. No customers, no traffic, no revenue, no signed users. Any
   buyer materials or listings should say this plainly.
 
@@ -26,6 +30,13 @@ Notes for whoever takes this project over after purchase.
 - Monthly/annualized seat-waste estimate
 - Markdown report generation, in-app preview, copy-to-clipboard, and
   download
+- **Live Google Workspace directory sync** ("Connect Google Workspace"),
+  using the user's own OAuth Client ID (token-model flow, no client secret
+  required). A single "Connect Google Workspace" button is the only entry
+  point — it opens a small popup (pre-filled if a Client ID was saved
+  before) to connect, change, or clear the saved ID. There's no separate
+  settings/gear icon anymore; that was removed in favor of this one entry
+  point once it became the only place the popup was ever opened from.
 - Four views: Dashboard, Workspace, Report, Buyer Handoff — all in one
   `index.html`, no build tooling required
 
@@ -72,9 +83,10 @@ Roughly in order of typical priority:
    runs and CSVs survive a page reload and can be shared across a team.
 2. **Auth** — if more than one person on a team will use it, or if it's
    sold as a hosted product rather than handed off as source.
-3. **A live SCIM/IdP connector** — pulling users directly from Okta, Azure
-   AD, Google Workspace, etc. instead of a manual CSV paste. This is the
-   single highest-leverage addition for the target buyer segment.
+3. **Okta / Microsoft Entra ID (Azure AD) live sync** — Google Workspace
+   sync is already built; the same pattern (OAuth token flow, no backend
+   required) could be extended to other IdPs for buyers whose org uses
+   something other than Google.
 4. **Scheduled/recurring runs** — re-running the analysis on a cadence and
    diffing against the last run, with email or Slack alerting on new flags.
 5. **Multi-workspace support** — if sold to an agency/consultant who
