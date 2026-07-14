@@ -1,0 +1,15 @@
+email,role,status,last_login,department,mfa,scim_external_id,manager,monthly_license_cost
+admin@example.com,Admin,active,2026-07-01,Ops,yes,ext-1001,cto@example.com,49
+old-admin@example.com,Admin,active,2025-12-15,Engineering,no,,cto@example.com,99
+contractor@example.com,Editor,active,2026-01-02,,yes,ext-1003,,39
+viewer@example.com,Viewer,inactive,2025-11-20,Support,yes,ext-1004,cto@example.com,29
+orphan@example.com,Admin,inactive,2025-09-01,,no,,,99
+sales1@example.com,Editor,active,2026-07-05,Sales,yes,ext-1006,vp-sales@example.com,39
+sales2@example.com,Viewer,active,2026-06-28,Sales,yes,ext-1007,vp-sales@example.com,19
+finance-lead@example.com,Admin,active,2026-07-10,Finance,yes,ext-1008,cfo@example.com,49
+temp-intern@example.com,Editor,inactive,2025-08-14,Marketing,no,,,19
+support1@example.com,Viewer,active,2026-07-02,Support,yes,ext-1010,cto@example.com,19
+legacy-svc@example.com,Admin,active,2025-10-30,,no,,,49
+new-hire@example.com,Editor,active,2026-07-12,Engineering,yes,ext-1012,cto@example.com,39
+consultant@example.com,Viewer,inactive,2026-02-11,,yes,,,19
+ex-employee@example.com,Editor,inactive,2025-06-01,Sales,no,,vp-sales@example.com,39
