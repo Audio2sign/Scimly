@@ -1,0 +1,1051 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scimly — Access Review & SCIM Readiness</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0B0E14;
+    --ink-soft:#161A24;
+    --ink-line:#262B38;
+    --page:#F2F4F8;
+    --card:#FFFFFF;
+    --border:#E3E6EF;
+    --border-soft:#ECEEF4;
+    --text:#0E1016;
+    --text-muted:#63697C;
+    --text-faint:#9AA0B4;
+    --text-inverse:#F5F6FA;
+    --text-inverse-muted:#8C92A6;
+    --accent:#0F9E97;
+    --accent-dark:#0B7C76;
+    --accent-2:#4338CA;
+    --accent-soft:#E3FBF8;
+    --success:#12A464;
+    --success-soft:#E8FAF0;
+    --warning:#C2790A;
+    --warning-soft:#FFF6E4;
+    --danger:#D6432E;
+    --danger-soft:#FCEAE7;
+    --radius:14px;
+    --radius-sm:10px;
+    --sans:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    --display:'Space Grotesk','Inter',sans-serif;
+    --mono:'IBM Plex Mono',ui-monospace,'SF Mono',Menlo,monospace;
+    --shadow:0 1px 2px rgba(14,16,22,.05), 0 10px 28px -18px rgba(14,16,22,.35);
+  }
+  textarea.drag-over{
+    border-color:var(--accent);
+    background:var(--accent-soft);
+    box-shadow:0 0 0 3px rgba(15,158,151,.15);
+  }
+  .drop-hint{font-size:11.5px;color:var(--text-faint);margin-top:6px;}
+  .risk-dist{margin-top:16px;}
+  .risk-dist-bar{display:flex;width:100%;height:10px;border-radius:6px;overflow:hidden;background:var(--border-soft);}
+  .risk-dist-bar span{height:100%;display:block;}
+  .risk-dist-legend{display:flex;gap:18px;margin-top:9px;flex-wrap:wrap;}
+  .risk-dist-legend .item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted);}
+  .risk-dist-legend .dot{width:8px;height:8px;border-radius:50%;display:inline-block;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:var(--sans);
+    background:var(--page);
+    color:var(--text);
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:inherit;}
+  button{font-family:inherit;}
+
+  /* ---------- layout ---------- */
+  .app{display:flex;min-height:100vh;}
+  .sidebar{
+    width:266px;flex:0 0 266px;color:var(--text-inverse);
+    padding:22px 16px;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;
+    background-color:var(--ink);
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(255,255,255,0.055) 1px, transparent 0);
+    background-size:14px 14px;
+    border-right:1px solid var(--ink-line);
+  }
+  .brand{display:flex;gap:11px;align-items:center;padding:4px 6px 22px 6px;}
+  .brand-mark{
+    width:36px;height:36px;border-radius:10px;flex:0 0 36px;position:relative;
+    background:linear-gradient(155deg,var(--accent),var(--accent-2));
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--display);font-weight:700;font-size:13px;letter-spacing:.02em;color:#fff;
+    box-shadow:0 4px 14px -4px rgba(15,158,151,0.55);
+  }
+  .brand-mark::after{
+    content:"";position:absolute;inset:3px;border-radius:7px;border:1px solid rgba(255,255,255,0.35);
+  }
+  .brand-text .name{font-family:var(--display);font-size:16px;font-weight:700;line-height:1.2;letter-spacing:-.01em;}
+  .brand-text .sub{font-size:10.8px;color:var(--text-inverse-muted);margin-top:3px;letter-spacing:.02em;}
+
+  .nav{display:flex;flex-direction:column;gap:3px;margin-top:8px;}
+  .nav button{
+    all:unset;cursor:pointer;position:relative;padding:10px 12px 10px 16px;border-radius:9px;font-size:13.5px;font-weight:500;
+    color:var(--text-inverse-muted);display:flex;align-items:center;gap:10px;transition:background .15s,color .15s,transform .15s;
+  }
+  .nav button svg{width:15px;height:15px;flex:0 0 15px;opacity:.75;transition:opacity .15s;}
+  .nav button:hover{background:var(--ink-soft);color:var(--text-inverse);transform:translateX(2px);}
+  .nav button:hover svg{opacity:1;}
+  .nav button.active{background:var(--ink-soft);color:#fff;}
+  .nav button.active svg{opacity:1;}
+  .nav button.active::before{
+    content:"";position:absolute;left:0;top:8px;bottom:8px;width:3px;border-radius:3px;
+    background:linear-gradient(180deg,var(--accent),var(--accent-2));
+  }
+
+  .sidebar-footer{
+    margin-top:auto;background:var(--ink-soft);border:1px solid var(--ink-line);border-radius:12px;padding:15px;
+  }
+  .sidebar-footer .price{font-family:var(--display);font-size:13px;font-weight:700;color:#fff;margin-bottom:5px;}
+  .sidebar-footer .desc{font-size:11.3px;line-height:1.6;color:var(--text-inverse-muted);}
+  .sidebar-footer .status-pill{
+    display:inline-flex;align-items:center;gap:5px;margin-top:11px;font-size:10.5px;font-weight:600;
+    color:#F0B355;background:rgba(240,179,85,0.12);border:1px solid rgba(240,179,85,0.25);
+    padding:3px 8px;border-radius:20px;
+  }
+  .status-pill .dot{width:5px;height:5px;border-radius:50%;background:#F0B355;}
+
+  .main{flex:1;min-width:0;padding:30px 36px 60px;}
+  .topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;margin-bottom:26px;flex-wrap:wrap;}
+  .eyebrow{font-size:11px;font-weight:700;letter-spacing:.12em;color:var(--accent-dark);text-transform:uppercase;display:inline-flex;align-items:center;gap:7px;}
+  .eyebrow::before{content:"";width:7px;height:7px;border-radius:2px;background:linear-gradient(135deg,var(--accent),var(--accent-2));display:inline-block;}
+  h1.page-title{font-family:var(--display);font-size:30px;font-weight:700;letter-spacing:-0.015em;margin:8px 0 9px;line-height:1.12;}
+  .page-sub{font-size:13.5px;color:var(--text-muted);max-width:640px;line-height:1.65;}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;}
+  .btn{
+    border:1px solid var(--border);background:#fff;color:var(--text);padding:9px 17px;border-radius:999px;
+    font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:.15s;
+    box-shadow:var(--shadow);
+  }
+  .btn:hover{border-color:#C7CCDA;transform:translateY(-1px);}
+  .btn:active{transform:translateY(0px);}
+  .btn:disabled{opacity:.45;cursor:not-allowed;transform:none;}
+  .btn.primary{background:linear-gradient(135deg,var(--accent),var(--accent-2));border-color:transparent;color:#fff;box-shadow:0 6px 16px -8px rgba(67,56,202,0.55);}
+  .btn.primary:hover{filter:brightness(1.06);}
+  .btn.ghost{background:transparent;box-shadow:none;}
+  .btn svg{width:14px;height:14px;}
+
+  .view{display:none;}
+  .view.active{display:block;}
+
+  /* ---------- cards / grid ---------- */
+  .stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px;}
+  .split-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px;align-items:start;}
+  @media(max-width:980px){.stat-grid{grid-template-columns:1fr;}.split-grid{grid-template-columns:1fr;}}
+
+  .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:19px 21px;box-shadow:var(--shadow);}
+  .card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px;}
+  .card-head h2{font-family:var(--display);font-size:15px;font-weight:600;margin:0;letter-spacing:-.005em;}
+  .tag{font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:20px;letter-spacing:.02em;white-space:nowrap;}
+  .tag.blue{background:var(--accent-soft);color:var(--accent-dark);}
+  .tag.green{background:var(--success-soft);color:var(--success);}
+  .tag.amber{background:var(--warning-soft);color:var(--warning);}
+  .tag.gray{background:#F1F2F6;color:var(--text-muted);}
+
+  .stat-label{font-size:12px;color:var(--text-muted);font-weight:600;}
+  .stat-value{font-family:var(--display);font-size:32px;font-weight:700;margin:8px 0 4px;letter-spacing:-0.02em;}
+  .stat-note{font-size:12px;color:var(--text-muted);line-height:1.5;}
+  .stat-with-ring{display:flex;align-items:center;gap:16px;}
+  .stat-with-ring .ring-wrap{flex:0 0 auto;}
+  .stat-value.small-top{margin-top:0;}
+
+  /* ---------- signature element: clearance badge ---------- */
+  .card.badge-card{
+    position:relative;overflow:hidden;
+    background:
+      radial-gradient(circle at 6px 0, transparent 5px, var(--card) 5.5px) top left/16px 16px repeat-x,
+      var(--card);
+    border-top:none;
+  }
+  .card.badge-card::before{
+    content:"";position:absolute;top:0;left:0;right:0;height:3px;
+    background:repeating-linear-gradient(90deg,var(--accent) 0 10px,var(--accent-2) 10px 20px);
+    opacity:.9;
+  }
+  .badge-barcode{
+    position:absolute;right:16px;bottom:14px;display:flex;align-items:flex-end;gap:2px;height:26px;opacity:.55;
+  }
+  .badge-barcode span{display:block;width:2px;background:var(--ink);border-radius:1px;}
+  .badge-clearance-label{
+    font-family:var(--mono);font-size:10px;letter-spacing:.09em;color:var(--text-faint);text-transform:uppercase;margin-top:2px;
+  }
+
+  /* checklist */
+  .checklist{display:flex;flex-direction:column;}
+  .check-item{display:flex;align-items:flex-start;gap:11px;padding:10px 0;border-top:1px solid var(--border-soft);}
+  .check-item:first-child{border-top:none;padding-top:2px;}
+  .check-item input{width:16px;height:16px;margin-top:2px;accent-color:var(--accent);flex:0 0 16px;}
+  .check-item .ci-text{font-size:12.8px;line-height:1.5;flex:1;}
+  .check-item .ci-row{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;}
+
+  textarea{
+    width:100%;border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 13px;
+    font-family:var(--mono);font-size:12.2px;line-height:1.6;color:var(--text);resize:vertical;background:#FBFBFD;
+  }
+  textarea:focus,input:focus,select:focus{outline:2px solid var(--accent-soft);border-color:var(--accent);}
+  label.field-label{font-size:12px;font-weight:600;color:var(--text-muted);display:block;margin:14px 0 6px;}
+  label.field-label:first-of-type{margin-top:0;}
+  input[type=date],input[type=number],input[type=text]{
+    border:1px solid var(--border);border-radius:8px;padding:9px 11px;font-size:13px;font-family:var(--sans);width:100%;
+  }
+  .field-row{display:flex;gap:12px;}
+  .field-row > div{flex:1;}
+  .hint{font-size:11.3px;color:var(--text-faint);margin-top:6px;line-height:1.5;}
+  .error-box{
+    margin-top:10px;background:var(--danger-soft);border:1px solid #F6C6C2;color:#8A241C;font-size:12px;
+    padding:9px 11px;border-radius:8px;line-height:1.5;display:none;
+  }
+  .error-box.show{display:block;}
+
+  /* table */
+  .table-wrap{overflow-x:auto;}
+  table{width:100%;border-collapse:collapse;font-size:12.6px;}
+  thead th{
+    text-align:left;font-size:10.6px;letter-spacing:.05em;color:var(--text-faint);font-weight:700;
+    text-transform:uppercase;padding:9px 12px;border-bottom:1px solid var(--border);white-space:nowrap;
+  }
+  tbody td{padding:12px;border-bottom:1px solid var(--border-soft);vertical-align:top;}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr:hover{background:#FAFBFD;}
+  td.mono,.mono{font-family:var(--mono);}
+  .badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap;}
+  .badge.active{background:var(--success-soft);color:var(--success);}
+  .badge.inactive{background:var(--danger-soft);color:var(--danger);}
+  .flagpill{display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600;line-height:1.7;}
+  .flagpill.ok{background:var(--success-soft);color:var(--success);}
+  .flagpill.warn{background:var(--warning-soft);color:#9A5B08;}
+  .flagpill.crit{background:var(--danger-soft);color:#A32014;}
+  .flag-list{max-width:280px;line-height:1.7;}
+  .risk-cell{display:flex;align-items:center;gap:8px;}
+  .risk-num{font-weight:700;font-family:var(--mono);width:26px;text-align:right;}
+  .risk-bar{width:52px;height:6px;border-radius:4px;background:#EEF0F4;overflow:hidden;}
+  .risk-bar > span{display:block;height:100%;border-radius:4px;}
+  .empty-row td{text-align:center;color:var(--text-faint);padding:34px 12px;font-size:13px;}
+
+  /* report */
+  pre.report{
+    background:#0E1015;color:#D7DBE3;font-family:var(--mono);font-size:12px;line-height:1.65;
+    padding:18px 18px;border-radius:10px;overflow:auto;max-height:640px;white-space:pre-wrap;word-break:break-word;margin:0;
+  }
+  .kv-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 20px;margin-bottom:6px;}
+  .kv-grid .kv-item{font-size:12.5px;padding:10px 12px;background:#FAFBFD;border:1px solid var(--border-soft);border-radius:8px;}
+  .kv-grid .kv-item b{display:block;font-family:var(--display);font-size:17px;font-weight:700;margin-top:3px;}
+
+  ul.handoff-list{margin:0;padding-left:18px;font-size:13px;line-height:1.85;color:var(--text);}
+  ul.handoff-list li{margin-bottom:2px;}
+  .section-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-faint);margin:22px 0 10px;}
+  .section-title:first-child{margin-top:0;}
+  .disclaimer{
+    background:var(--warning-soft);border:1px solid #F3DBA9;border-radius:10px;padding:14px 16px;font-size:12.5px;
+    line-height:1.7;color:#7A4A05;margin-top:6px;
+  }
+  .price-tag{
+    font-family:var(--display);font-size:27px;font-weight:700;letter-spacing:-0.02em;
+    background:linear-gradient(135deg,var(--accent-dark),var(--accent-2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+
+  footer.foot{margin-top:34px;font-size:11.5px;color:var(--text-faint);text-align:center;}
+
+  @media(max-width:840px){
+    .sidebar{display:none;}
+    .main{padding:20px;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">SC</div>
+      <div class="brand-text">
+        <div class="name">Scimly</div>
+        <div class="sub">Access review &amp; SCIM readiness</div>
+      </div>
+    </div>
+    <nav class="nav" id="nav">
+      <button data-view="dashboard" class="active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+        Dashboard
+      </button>
+      <button data-view="workspace">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h16M4 12h16M4 19h10"/></svg>
+        Workspace
+      </button>
+      <button data-view="report">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h9l5 5v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M9 13h6M9 17h6M9 9h2"/></svg>
+        Report
+      </button>
+      <button data-view="handoff">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.3 7 12 12l8.7-5M12 22V12"/></svg>
+        Buyer Handoff
+      </button>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="price">Target price: $2,000–$6,000</div>
+      <div class="desc">Built as a transferable source-code project with demo data, docs, and exportable reports.</div>
+      <span class="status-pill"><span class="dot"></span> Pre-revenue starter</span>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <main class="main">
+
+    <div class="topbar">
+      <div>
+        <div class="eyebrow">Access review &amp; SCIM readiness</div>
+        <h1 class="page-title">Scimly</h1>
+        <div class="page-sub">CSV-based user access review and SCIM-readiness dashboard, built for B2B SaaS founders, internal IT teams, compliance consultants, and admin-tool buyers.</div>
+      </div>
+      <div class="actions">
+        <button class="btn primary" id="btnRun">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Run Analysis
+        </button>
+        <button class="btn" id="btnDemo">Load Demo Data</button>
+        <button class="btn" id="btnExport">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0-4-4m4 4 4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+          Export Report
+        </button>
+      </div>
+    </div>
+
+    <!-- ================= DASHBOARD VIEW ================= -->
+    <section class="view active" id="view-dashboard">
+
+      <div class="stat-grid">
+        <div class="card badge-card">
+          <div class="stat-label">Readiness</div>
+          <div class="stat-with-ring">
+            <div class="ring-wrap" id="ringWrap"></div>
+            <div>
+              <div class="stat-value small-top" id="statReadiness">—</div>
+              <div class="badge-clearance-label">Clearance score</div>
+              <div class="stat-note">Primary score based on the current workspace.</div>
+            </div>
+          </div>
+          <div class="badge-barcode" aria-hidden="true">
+            <span style="height:60%;"></span><span style="height:100%;"></span><span style="height:40%;"></span>
+            <span style="height:80%;"></span><span style="height:55%;"></span><span style="height:100%;"></span>
+            <span style="height:35%;"></span><span style="height:70%;"></span><span style="height:90%;"></span>
+            <span style="height:45%;"></span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="stat-label">Open Items</div>
+          <div class="stat-value" id="statOpenItems">—</div>
+          <div class="stat-note">Items that need review before this project is buyer-ready.</div>
+        </div>
+        <div class="card">
+          <div class="stat-label">Export Status</div>
+          <div class="stat-value" id="statExportStatus">Draft</div>
+          <div class="stat-note" id="statExportNote">Reports are generated locally in the browser.</div>
+        </div>
+      </div>
+
+      <div class="split-grid">
+        <div class="card">
+          <div class="card-head"><h2>Input Workspace</h2><span class="tag gray">Local only</span></div>
+          <label class="field-label">User Access CSV</label>
+          <textarea id="csvInput" rows="9" spellcheck="false" placeholder="email,role,status,last_login,department,mfa,scim_external_id,manager,monthly_license_cost"></textarea>
+          <div class="drop-hint">Or drag &amp; drop a .csv file onto the box above.</div>
+          <div class="field-row">
+            <div>
+              <label class="field-label">Review date</label>
+              <input type="date" id="reviewDate">
+            </div>
+            <div>
+              <label class="field-label">Stale threshold (days)</label>
+              <input type="number" id="staleThreshold" min="1" value="90">
+            </div>
+          </div>
+          <div class="error-box" id="csvError"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h2>Action Checklist</h2><span class="tag amber">Buyer readiness</span></div>
+          <div class="checklist" id="checklist"></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:18px;">
+        <div class="card-head">
+          <h2>Analysis Table</h2>
+          <span class="tag blue" id="rowsAnalyzedTag">0 rows analyzed</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Email</th><th>Role</th><th>Status</th><th>Last login</th><th>MFA</th>
+                <th>SCIM external ID</th><th>Stale days</th><th>Flag</th><th>Risk</th><th>Waste&nbsp;/mo</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody">
+              <tr class="empty-row"><td colspan="10">No analysis yet. Paste a CSV and click “Run Analysis”, or click “Load Demo Data”.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="split-grid">
+        <div class="card">
+          <div class="card-head"><h2>Generated Report</h2><span class="tag gray">Markdown</span></div>
+          <pre class="report" id="reportPreviewShort">Run an analysis to generate the report.</pre>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2>Buyer Handoff</h2><span class="tag blue">$2,000–$6,000</span></div>
+          <p style="font-size:12.8px;color:var(--text-muted);line-height:1.7;margin-top:0;">This package is structured so a buyer can evaluate, customize, and deploy the app without contacting the original builder.</p>
+          <ul class="handoff-list">
+            <li>Runnable static app with no server dependency</li>
+            <li>Seed demo data included for screenshots and buyer review</li>
+            <li>README, pricing notes, and transfer notes included</li>
+            <li>Report export works locally in the browser</li>
+            <li>Next buyer step: connect auth, database, or hosted backend if desired</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= WORKSPACE VIEW ================= -->
+    <section class="view" id="view-workspace">
+      <div class="split-grid" style="grid-template-columns:1.3fr .7fr;">
+        <div class="card">
+          <div class="card-head"><h2>CSV Workspace</h2><span class="tag gray">Local only, nothing leaves the browser</span></div>
+          <label class="field-label">Required columns</label>
+          <div class="hint" style="margin-top:0;">
+            <code>email, role, status, last_login, department, mfa, scim_external_id, manager, monthly_license_cost</code><br>
+            <code>role</code> expects Admin / Editor / Viewer. <code>status</code> expects active / inactive.
+            <code>mfa</code> expects yes / no. Dates use YYYY-MM-DD. Empty fields are treated as missing.
+          </div>
+          <label class="field-label">User Access CSV</label>
+          <textarea id="csvInputWs" rows="16" spellcheck="false"></textarea>
+          <div class="drop-hint">Or drag &amp; drop a .csv file onto the box above.</div>
+          <div class="error-box" id="csvErrorWs"></div>
+          <div class="actions" style="margin-top:14px;">
+            <button class="btn primary" id="btnRunWs">Run Analysis</button>
+            <button class="btn" id="btnDemoWs">Load Demo Data</button>
+            <button class="btn ghost" id="btnClearWs">Clear workspace</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2>Scoring Settings</h2></div>
+          <label class="field-label">Review date</label>
+          <input type="date" id="reviewDateWs">
+          <label class="field-label">Stale threshold (days)</label>
+          <input type="number" id="staleThresholdWs" min="1" value="90">
+          <div class="section-title">How risk is scored</div>
+          <div style="font-size:12.3px;line-height:1.85;color:var(--text-muted);">
+            Role base &mdash; Admin 20 · Editor 8 · Viewer 4<br>
+            + Staleness &mdash; up to 30 pts, scaled from days since last login<br>
+            + Admin without MFA &mdash; +25<br>
+            + Stale admin / stale user flag &mdash; +15 / +10<br>
+            + Missing SCIM external ID &mdash; +10<br>
+            + Missing department or manager &mdash; +8 each<br>
+            + Paid inactive seat &mdash; +15, waste = monthly license cost<br>
+            Risk is capped at 100. Readiness = 100 &minus; average risk across all rows.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= REPORT VIEW ================= -->
+    <section class="view" id="view-report">
+      <div class="card" style="margin-bottom:18px;">
+        <div class="card-head"><h2>Access-Review Summary</h2><span class="tag blue" id="reportDateTag">Not generated</span></div>
+        <div class="kv-grid">
+          <div class="kv-item">Readiness score<b id="kvReadiness">—</b></div>
+          <div class="kv-item">Open review items<b id="kvOpenItems">—</b></div>
+          <div class="kv-item">Estimated monthly waste<b id="kvWasteMonthly">—</b></div>
+          <div class="kv-item">Estimated annualized waste<b id="kvWasteAnnual">—</b></div>
+        </div>
+        <div class="risk-dist" id="riskDist">
+          <div class="field-label" style="margin-bottom:8px;">Risk distribution</div>
+          <div class="risk-dist-bar" id="riskDistBar"></div>
+          <div class="risk-dist-legend" id="riskDistLegend"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <h2>Full Markdown Report</h2>
+          <div class="actions">
+            <button class="btn" id="btnCopyReport">Copy markdown</button>
+            <button class="btn" id="btnExportCsv">Export CSV</button>
+            <button class="btn primary" id="btnDownloadReport">Download .md</button>
+          </div>
+        </div>
+        <pre class="report" id="reportFull">Run an analysis first — the report is generated from the current workspace and cannot be edited directly.</pre>
+      </div>
+    </section>
+
+    <!-- ================= BUYER HANDOFF VIEW ================= -->
+    <section class="view" id="view-handoff">
+      <div class="split-grid" style="grid-template-columns:1.4fr .6fr;">
+        <div class="card">
+          <div class="card-head"><h2>What Buyers Get</h2></div>
+          <ul class="handoff-list">
+            <li>Static dashboard source code (this app — HTML, CSS, JS, no build step, no server)</li>
+            <li>Sample CSV user export for demos, screenshots, and buyer diligence</li>
+            <li>Access-review scoring and SCIM-readiness flags, documented and editable</li>
+            <li>Monthly seat-waste estimate, annualized in the report export</li>
+            <li>Markdown report export, generated entirely in the browser</li>
+            <li>README, pricing notes, and transfer notes</li>
+          </ul>
+
+          <div class="section-title">Best fit</div>
+          <p style="font-size:13px;line-height:1.75;margin:0;">B2B SaaS founders, IT/admin teams, compliance consultants, and operators who need a lightweight access-review workflow before investing in a larger admin platform.</p>
+
+          <div class="section-title">Suggested next steps for a buyer</div>
+          <ul class="handoff-list">
+            <li>Replace the demo CSV with a production export or a live connector</li>
+            <li>Wire up authentication and persistent storage if multi-user access is needed</li>
+            <li>Connect a real SCIM/IdP source (Okta, Azure AD, Google Workspace) for live external IDs</li>
+            <li>Add scheduled/recurring review runs and email or Slack alerting on new flags</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h2>Package</h2></div>
+          <div class="price-tag">$2,000–$6,000</div>
+          <div class="hint" style="margin-bottom:14px;">Target price range for the transferable source-code package.</div>
+          <div class="section-title" style="margin-top:0;">Current status</div>
+          <div class="disclaimer">
+            Working source-code starter with demo data. Pre-revenue &mdash; no customers, traffic, or revenue are claimed.
+          </div>
+          <div class="section-title">Included files</div>
+          <ul class="handoff-list" style="font-size:12.5px;">
+            <li><span class="mono">index.html</span> — the app</li>
+            <li><span class="mono">sample-data.csv</span> — demo dataset</li>
+            <li><span class="mono">README.md</span></li>
+            <li><span class="mono">PRICING.md</span></li>
+            <li><span class="mono">TRANSFER_NOTES.md</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <footer class="foot">Runs entirely in your browser. Nothing you paste here is uploaded anywhere.</footer>
+  </main>
+</div>
+
+<script>
+(function(){
+
+  /* ---------------- state ---------------- */
+  let lastAnalysis = null;   // {rows, generatedAt, meta}
+  let hasImported = false;
+  let hasRunOnce = false;
+  let hasExported = false;
+  let hasLoadedDemo = false;
+
+  const FLAG_WEIGHTS = {
+    'Stale admin': 15,
+    'Stale user': 10,
+    'Admin no MFA': 25,
+    'Missing SCIM ID': 10,
+    'Missing department': 8,
+    'Missing manager': 8,
+    'Paid inactive user': 15
+  };
+  const ROLE_BASE = { admin: 20, editor: 8, viewer: 4 };
+
+  const DEMO_CSV = `email,role,status,last_login,department,mfa,scim_external_id,manager,monthly_license_cost
+admin@example.com,Admin,active,2026-07-01,Ops,yes,ext-1001,cto@example.com,49
+old-admin@example.com,Admin,active,2025-12-15,Engineering,no,,cto@example.com,99
+contractor@example.com,Editor,active,2026-01-02,,yes,ext-1003,,39
+viewer@example.com,Viewer,inactive,2025-11-20,Support,yes,ext-1004,cto@example.com,29
+orphan@example.com,Admin,inactive,2025-09-01,,no,,,99
+sales1@example.com,Editor,active,2026-07-05,Sales,yes,ext-1006,vp-sales@example.com,39
+sales2@example.com,Viewer,active,2026-06-28,Sales,yes,ext-1007,vp-sales@example.com,19
+finance-lead@example.com,Admin,active,2026-07-10,Finance,yes,ext-1008,cfo@example.com,49
+temp-intern@example.com,Editor,inactive,2025-08-14,Marketing,no,,,19
+support1@example.com,Viewer,active,2026-07-02,Support,yes,ext-1010,cto@example.com,19
+legacy-svc@example.com,Admin,active,2025-10-30,,no,,,49
+new-hire@example.com,Editor,active,2026-07-12,Engineering,yes,ext-1012,cto@example.com,39
+consultant@example.com,Viewer,inactive,2026-02-11,,yes,,,19
+ex-employee@example.com,Editor,inactive,2025-06-01,Sales,no,,vp-sales@example.com,39`;
+
+  /* ---------------- utils ---------------- */
+  function todayISO(){ return new Date().toISOString().slice(0,10); }
+  function escapeHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+  function fmtMoney(n){ return '$' + (Math.round(n*100)/100).toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:2}); }
+  function daysBetween(a,b){ return Math.round((a-b)/86400000); }
+
+  function parseCSV(text){
+    const lines = text.replace(/\r\n/g,'\n').split('\n').filter(l=>l.trim().length>0);
+    if(lines.length < 1) return {header:[],rows:[]};
+    function splitLine(line){
+      const out=[]; let cur=''; let inQ=false;
+      for(let i=0;i<line.length;i++){
+        const ch=line[i];
+        if(ch === '"'){
+          if(inQ && line[i+1]==='"'){ cur+='"'; i++; } else { inQ = !inQ; }
+        } else if(ch === ',' && !inQ){
+          out.push(cur); cur='';
+        } else { cur += ch; }
+      }
+      out.push(cur);
+      return out.map(s=>s.trim());
+    }
+    const header = splitLine(lines[0]).map(h=>h.toLowerCase());
+    const rows = lines.slice(1).map(l=>{
+      const cells = splitLine(l);
+      const obj = {};
+      header.forEach((h,i)=>obj[h]=cells[i]!==undefined?cells[i]:'');
+      return obj;
+    });
+    return {header, rows};
+  }
+
+  const REQUIRED_COLS = ['email','role','status','last_login','department','mfa','scim_external_id','manager','monthly_license_cost'];
+
+  function analyze(csvText, reviewDateStr, staleThreshold){
+    const {header, rows} = parseCSV(csvText);
+    if(rows.length === 0){
+      throw new Error('No data rows found. Paste a CSV with a header row plus at least one user.');
+    }
+    const missing = REQUIRED_COLS.filter(c=>!header.includes(c));
+    if(missing.length){
+      throw new Error('Missing required column(s): ' + missing.join(', '));
+    }
+    const reviewDate = reviewDateStr ? new Date(reviewDateStr+'T00:00:00') : new Date();
+
+    const analyzed = rows.map(row=>{
+      const roleRaw = (row.role||'').trim();
+      const role = roleRaw.toLowerCase();
+      const roleKey = role.replace(/\s+/g,''); // tolerate incidental whitespace, e.g. "Ad min" -> "admin"
+      const isAdmin = roleKey === 'admin';
+      const statusRaw = (row.status||'').trim();
+      const status = statusRaw.toLowerCase();
+      const isInactive = status === 'inactive';
+      const mfa = (row.mfa||'').trim().toLowerCase();
+      const scim = (row.scim_external_id||'').trim();
+      const dept = (row.department||'').trim();
+      const manager = (row.manager||'').trim();
+      const cost = parseFloat(row.monthly_license_cost);
+      const monthlyCost = isNaN(cost) ? 0 : cost;
+
+      let staleDays = null;
+      const lastLoginRaw = (row.last_login||'').trim();
+      if(lastLoginRaw){
+        const d = new Date(lastLoginRaw+'T00:00:00');
+        if(!isNaN(d.getTime())) staleDays = daysBetween(reviewDate, d);
+      }
+
+      const flags = [];
+      const isStale = staleDays !== null && staleDays > staleThreshold;
+      if(isStale) flags.push(isAdmin ? 'Stale admin' : 'Stale user');
+      if(isAdmin && mfa !== 'yes') flags.push('Admin no MFA');
+      if(!scim) flags.push('Missing SCIM ID');
+      if(!dept) flags.push('Missing department');
+      if(!manager) flags.push('Missing manager');
+      let waste = 0;
+      if(isInactive && monthlyCost > 0){ flags.push('Paid inactive user'); waste = monthlyCost; }
+
+      const roleBase = ROLE_BASE[roleKey] !== undefined ? ROLE_BASE[roleKey] : 4;
+      const staleBonus = staleDays !== null ? Math.min(Math.floor(Math.max(staleDays,0)/10), 30) : 0;
+      let risk = roleBase + staleBonus;
+      flags.forEach(f=>{ risk += (FLAG_WEIGHTS[f]||0); });
+      risk = Math.max(0, Math.min(100, Math.round(risk)));
+
+      return {
+        email: row.email || '(no email)',
+        role: roleRaw || '—',
+        isAdmin,
+        status: statusRaw || '—',
+        isInactive,
+        last_login: lastLoginRaw || '—',
+        department: dept,
+        mfa: (row.mfa||'').trim() || '—',
+        scim_external_id: scim,
+        manager,
+        monthlyCost,
+        staleDays,
+        flags,
+        risk,
+        waste
+      };
+    });
+
+    return { rows: analyzed, reviewDate, staleThreshold, generatedAt: new Date() };
+  }
+
+  function computeSummary(analysis){
+    const rows = analysis.rows;
+    const n = rows.length || 1;
+    const avgRisk = rows.reduce((s,r)=>s+r.risk,0) / n;
+    const readiness = Math.max(0, Math.min(100, Math.round(100 - avgRisk)));
+    const openItems = rows.filter(r=>r.flags.length>0).length;
+    const wasteMonthly = rows.reduce((s,r)=>s+r.waste,0);
+    const wasteAnnual = wasteMonthly * 12;
+    const scimCoverage = Math.round(100 * rows.filter(r=>r.scim_external_id).length / n);
+    const mfaAdminGaps = rows.filter(r=>r.isAdmin && r.mfa.toLowerCase()!=='yes').length;
+    return { readiness, openItems, wasteMonthly, wasteAnnual, scimCoverage, mfaAdminGaps, n: rows.length };
+  }
+
+  /* ---------------- rendering ---------------- */
+  function riskColor(risk){
+    if(risk >= 70) return 'var(--danger)';
+    if(risk >= 40) return 'var(--warning)';
+    return 'var(--success)';
+  }
+
+  function renderRing(pct){
+    const size=64, stroke=7, r=(size-stroke)/2, c=2*Math.PI*r;
+    const offset = c - (pct/100)*c;
+    const color = pct>=70 ? 'var(--success)' : pct>=40 ? 'var(--warning)' : 'var(--danger)';
+    document.getElementById('ringWrap').innerHTML = `
+      <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+        <circle cx="${size/2}" cy="${size/2}" r="${r}" stroke="#EEF0F4" stroke-width="${stroke}" fill="none"/>
+        <circle cx="${size/2}" cy="${size/2}" r="${r}" stroke="${color}" stroke-width="${stroke}" fill="none"
+          stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${offset}"
+          transform="rotate(-90 ${size/2} ${size/2})"/>
+      </svg>`;
+  }
+
+  function flagPillClass(flags){
+    if(flags.length===0) return 'ok';
+    if(flags.length>=3) return 'crit';
+    return 'warn';
+  }
+
+  function renderTable(analysis){
+    const tbody = document.getElementById('tableBody');
+    const rows = analysis.rows;
+    if(rows.length===0){
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="10">No analysis yet. Paste a CSV and click “Run Analysis”, or click “Load Demo Data”.</td></tr>';
+      return;
+    }
+    const sorted = [...rows].sort((a,b)=>b.risk-a.risk);
+    tbody.innerHTML = sorted.map(r=>{
+      const flagText = r.flags.length ? r.flags.join('; ') : 'OK';
+      const pillClass = flagPillClass(r.flags);
+      const statusClass = r.isInactive ? 'inactive' : 'active';
+      const staleTxt = r.staleDays===null ? '—' : r.staleDays;
+      return `<tr>
+        <td class="mono">${escapeHtml(r.email)}</td>
+        <td>${escapeHtml(r.role)}</td>
+        <td><span class="badge ${statusClass}">${escapeHtml(r.status)}</span></td>
+        <td class="mono">${escapeHtml(r.last_login)}</td>
+        <td>${escapeHtml(r.mfa)}</td>
+        <td class="mono">${escapeHtml(r.scim_external_id || '—')}</td>
+        <td class="mono">${staleTxt}</td>
+        <td><div class="flag-list"><span class="flagpill ${pillClass}">${escapeHtml(flagText)}</span></div></td>
+        <td><div class="risk-cell"><span class="risk-num">${r.risk}</span><span class="risk-bar"><span style="width:${r.risk}%;background:${riskColor(r.risk)}"></span></span></div></td>
+        <td class="mono">${r.waste>0 ? fmtMoney(r.waste) : '—'}</td>
+      </tr>`;
+    }).join('');
+    document.getElementById('rowsAnalyzedTag').textContent = rows.length + ' rows analyzed';
+  }
+
+  function buildReportMarkdown(analysis, summary){
+    const rows = analysis.rows;
+    const sorted = [...rows].sort((a,b)=>b.risk-a.risk);
+    const flagged = sorted.filter(r=>r.flags.length>0);
+    const genStr = analysis.generatedAt.toLocaleString();
+
+    let md = `# Scimly Access Review Report\n\n`;
+    md += `Target buyer: B2B SaaS founders, internal IT teams, compliance consultants, and admin-tool buyers.\n`;
+    md += `Target price: $2,000-$6,000\n\n`;
+    md += `Review date: ${analysis.reviewDate.toISOString().slice(0,10)}\n`;
+    md += `Generated locally: ${genStr}\n\n`;
+    md += `Readiness score: ${summary.readiness}/100\n`;
+    md += `Open review items: ${summary.openItems} of ${summary.n}\n`;
+    md += `SCIM external ID coverage: ${summary.scimCoverage}%\n`;
+    md += `Admin accounts without MFA: ${summary.mfaAdminGaps}\n\n`;
+    md += `Estimated monthly license waste: ${fmtMoney(summary.wasteMonthly)}\n`;
+    md += `Estimated annualized waste: ${fmtMoney(summary.wasteAnnual)}\n\n`;
+
+    md += `## Priority actions\n`;
+    if(flagged.length===0){
+      md += `No open flags. This workspace is in good standing.\n\n`;
+    } else {
+      flagged.slice(0,10).forEach((r,i)=>{
+        md += `${i+1}. ${r.flags.join('; ')} - ${r.email}\n`;
+      });
+      md += `\n`;
+    }
+
+    md += `## Full user table\n`;
+    sorted.forEach((r,i)=>{
+      md += `${i+1}. email: ${r.email} | role: ${r.role} | status: ${r.status} | last_login: ${r.last_login} | risk: ${r.risk} | flags: ${r.flags.length? r.flags.join('; '):'OK'}\n`;
+    });
+    md += `\n`;
+
+    md += `## Recommended buyer handoff\n`;
+    md += `- Review the demo data and replace it with production examples.\n`;
+    md += `- Capture screenshots from the dashboard.\n`;
+    md += `- Include README, pricing notes, and transfer notes in the sale packet.\n`;
+    md += `- For a higher valuation, add a hosted demo, first users, traffic proof, or waitlist evidence.\n`;
+    md += `- Current status: working source-code starter with demo data. Pre-revenue; no customers, traffic, or revenue are claimed.\n`;
+
+    return md;
+  }
+
+  function renderReport(analysis, summary){
+    const md = buildReportMarkdown(analysis, summary);
+    document.getElementById('reportFull').textContent = md;
+    const shortPreview = md.split('\n').slice(0,18).join('\n') + '\n…';
+    document.getElementById('reportPreviewShort').textContent = shortPreview;
+    document.getElementById('reportDateTag').textContent = analysis.generatedAt.toLocaleString();
+    document.getElementById('kvReadiness').textContent = summary.readiness + '/100';
+    document.getElementById('kvOpenItems').textContent = summary.openItems + ' of ' + summary.n;
+    document.getElementById('kvWasteMonthly').textContent = fmtMoney(summary.wasteMonthly);
+    document.getElementById('kvWasteAnnual').textContent = fmtMoney(summary.wasteAnnual);
+    renderRiskDist(analysis.rows);
+    return md;
+  }
+
+  function renderRiskDist(rows){
+    const bar = document.getElementById('riskDistBar');
+    const legend = document.getElementById('riskDistLegend');
+    if(!rows || !rows.length){
+      bar.innerHTML = '';
+      legend.innerHTML = '';
+      return;
+    }
+    let low=0, med=0, high=0;
+    rows.forEach(r=>{
+      if(r.risk>=70) high++;
+      else if(r.risk>=40) med++;
+      else low++;
+    });
+    const n = rows.length;
+    const seg = (count,color)=> count>0
+      ? `<span style="width:${(count/n*100).toFixed(2)}%;background:${color};"></span>` : '';
+    bar.innerHTML = seg(low,'var(--success)') + seg(med,'var(--warning)') + seg(high,'var(--danger)');
+    legend.innerHTML = `
+      <span class="item"><span class="dot" style="background:var(--success);"></span>Low (&lt;40) — ${low}</span>
+      <span class="item"><span class="dot" style="background:var(--warning);"></span>Medium (40–69) — ${med}</span>
+      <span class="item"><span class="dot" style="background:var(--danger);"></span>High (70+) — ${high}</span>`;
+  }
+
+  function renderStats(summary){
+    document.getElementById('statReadiness').textContent = summary.readiness + '%';
+    document.getElementById('statOpenItems').textContent = summary.openItems;
+    renderRing(summary.readiness);
+  }
+
+  function renderChecklist(){
+    const items = [
+      { text: 'Paste/import user CSVs with email, role, status, last login, department, MFA, manager, and license cost', done: hasImported },
+      { text: 'Flags inactive admins, stale users, missing departments, no-MFA admins, and paid inactive licenses', done: hasRunOnce },
+      { text: 'SCIM-readiness checklist based on external IDs and manager fields', done: hasRunOnce },
+      { text: 'Access-review report export with estimated monthly waste', done: hasExported },
+      { text: 'Seed CSV for demo screenshots and buyer diligence', done: hasLoadedDemo }
+    ];
+    const el = document.getElementById('checklist');
+    el.innerHTML = items.map(it=>`
+      <div class="check-item">
+        <input type="checkbox" disabled ${it.done?'checked':''}>
+        <div class="ci-row">
+          <div class="ci-text">${it.text}</div>
+          <span class="tag ${it.done?'blue':'gray'}">${it.done?'Included':'Ready'}</span>
+        </div>
+      </div>`).join('');
+  }
+
+  function updateExportStatus(){
+    const el = document.getElementById('statExportStatus');
+    const note = document.getElementById('statExportNote');
+    if(hasExported){
+      el.textContent = 'Exported';
+      note.textContent = 'Report downloaded ' + new Date().toLocaleString() + '.';
+    } else {
+      el.textContent = 'Draft';
+      note.textContent = 'Reports are generated locally in the browser.';
+    }
+  }
+
+  function showError(msg){
+    ['csvError','csvErrorWs'].forEach(id=>{
+      const el = document.getElementById(id);
+      if(msg){ el.textContent = msg; el.classList.add('show'); }
+      else { el.textContent=''; el.classList.remove('show'); }
+    });
+  }
+
+  /* ---------------- wiring ---------------- */
+  const csvBoxes = ['csvInput','csvInputWs'];
+  const dateBoxes = ['reviewDate','reviewDateWs'];
+  const thresholdBoxes = ['staleThreshold','staleThresholdWs'];
+
+  function syncFrom(sourceId, group){
+    const val = document.getElementById(sourceId).value;
+    group.forEach(id=>{ if(id!==sourceId) document.getElementById(id).value = val; });
+  }
+  csvBoxes.forEach(id=>document.getElementById(id).addEventListener('input', e=>{
+    syncFrom(id, csvBoxes);
+    hasImported = document.getElementById(id).value.trim().length>0;
+    renderChecklist();
+  }));
+  dateBoxes.forEach(id=>document.getElementById(id).addEventListener('change', ()=>syncFrom(id, dateBoxes)));
+  thresholdBoxes.forEach(id=>document.getElementById(id).addEventListener('input', ()=>syncFrom(id, thresholdBoxes)));
+
+  csvBoxes.forEach(id=>{
+    const el = document.getElementById(id);
+    el.addEventListener('dragover', e=>{ e.preventDefault(); el.classList.add('drag-over'); });
+    el.addEventListener('dragleave', ()=>{ el.classList.remove('drag-over'); });
+    el.addEventListener('drop', e=>{
+      e.preventDefault();
+      el.classList.remove('drag-over');
+      const file = e.dataTransfer.files && e.dataTransfer.files[0];
+      if(!file) return;
+      if(!/\.csv$/i.test(file.name) && file.type !== 'text/csv'){
+        showError('Please drop a .csv file.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = evt=>{
+        csvBoxes.forEach(id2=>document.getElementById(id2).value = evt.target.result);
+        hasImported = true;
+        showError(null);
+        renderChecklist();
+      };
+      reader.readAsText(file);
+    });
+  });
+
+  document.getElementById('reviewDate').value = todayISO();
+  document.getElementById('reviewDateWs').value = todayISO();
+
+  function runAnalysis(){
+    showError(null);
+    const csvText = document.getElementById('csvInput').value;
+    const reviewDate = document.getElementById('reviewDate').value || todayISO();
+    const threshold = parseInt(document.getElementById('staleThreshold').value,10) || 90;
+    if(!csvText.trim()){
+      showError('Paste a CSV into the workspace first, or click "Load Demo Data".');
+      return;
+    }
+    try{
+      const analysis = analyze(csvText, reviewDate, threshold);
+      lastAnalysis = analysis;
+      hasImported = true;
+      hasRunOnce = true;
+      const summary = computeSummary(analysis);
+      renderStats(summary);
+      renderTable(analysis);
+      renderReport(analysis, summary);
+      renderChecklist();
+    }catch(err){
+      showError(err.message || String(err));
+    }
+  }
+
+  function loadDemo(){
+    csvBoxes.forEach(id=>document.getElementById(id).value = DEMO_CSV);
+    hasImported = true;
+    hasLoadedDemo = true;
+    renderChecklist();
+    runAnalysis();
+  }
+
+  function exportReport(){
+    if(!lastAnalysis){
+      showError('Run an analysis first — there is nothing to export yet.');
+      return;
+    }
+    const summary = computeSummary(lastAnalysis);
+    const md = renderReport(lastAnalysis, summary);
+    const blob = new Blob([md], {type:'text/markdown'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'access-review-report.md';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    hasExported = true;
+    updateExportStatus();
+    renderChecklist();
+  }
+
+  function exportCSV(){
+    if(!lastAnalysis){
+      showError('Run an analysis first — there is nothing to export yet.');
+      return;
+    }
+    const headers = ['email','role','status','last_login','mfa','scim_external_id','department','manager','monthly_license_cost','stale_days','risk','flags','waste'];
+    const esc = v => {
+      const s = String(v===null || v===undefined ? '' : v);
+      return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s;
+    };
+    const lines = [headers.join(',')];
+    lastAnalysis.rows.forEach(r=>{
+      lines.push([
+        r.email, r.role, r.status, r.last_login, r.mfa, r.scim_external_id,
+        r.department, r.manager, r.monthlyCost, r.staleDays===null?'':r.staleDays,
+        r.risk, r.flags.join('; '), r.waste
+      ].map(esc).join(','));
+    });
+    const blob = new Blob([lines.join('\n')], {type:'text/csv'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'access-review-rows.csv';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  document.getElementById('btnRun').addEventListener('click', runAnalysis);
+  document.getElementById('btnRunWs').addEventListener('click', runAnalysis);
+  document.getElementById('btnDemo').addEventListener('click', loadDemo);
+  document.getElementById('btnDemoWs').addEventListener('click', loadDemo);
+  document.getElementById('btnExport').addEventListener('click', exportReport);
+  document.getElementById('btnDownloadReport').addEventListener('click', exportReport);
+  document.getElementById('btnExportCsv').addEventListener('click', exportCSV);
+  document.getElementById('btnClearWs').addEventListener('click', ()=>{
+    csvBoxes.forEach(id=>document.getElementById(id).value='');
+    hasImported = false;
+    lastAnalysis = null;
+    renderChecklist();
+    renderTable({rows:[]});
+    document.getElementById('reportPreviewShort').textContent = 'Run an analysis to generate the report.';
+    document.getElementById('reportFull').textContent = 'Run an analysis first — the report is generated from the current workspace and cannot be edited directly.';
+    document.getElementById('statReadiness').textContent='—';
+    document.getElementById('statOpenItems').textContent='—';
+    document.getElementById('ringWrap').innerHTML='';
+    document.getElementById('riskDistBar').innerHTML='';
+    document.getElementById('riskDistLegend').innerHTML='';
+  });
+  document.getElementById('btnCopyReport').addEventListener('click', ()=>{
+    const text = document.getElementById('reportFull').textContent;
+    if(navigator.clipboard){
+      navigator.clipboard.writeText(text).then(()=>{
+        const btn = document.getElementById('btnCopyReport');
+        const old = btn.textContent; btn.textContent='Copied';
+        setTimeout(()=>btn.textContent=old, 1400);
+      }).catch(()=>{});
+    }
+  });
+
+  /* nav */
+  document.getElementById('nav').addEventListener('click', e=>{
+    const btn = e.target.closest('button[data-view]');
+    if(!btn) return;
+    document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    document.getElementById('view-'+btn.dataset.view).classList.add('active');
+  });
+
+  renderChecklist();
+  updateExportStatus();
+})();
+</script>
+</body>
+</html>
