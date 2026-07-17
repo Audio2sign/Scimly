@@ -5,6 +5,8 @@ user access export, run an analysis, and get a readiness score, a flagged
 list of access-review problems, an estimated monthly seat-waste figure, and
 an exportable Markdown report.
 
+> **Edition:** Both live directory connectors included: Google Workspace and Microsoft Entra ID.
+
 Built for: B2B SaaS founders, internal IT teams, compliance consultants, and
 admin-tool buyers who need a lightweight access-review workflow before
 investing in a larger identity/admin platform.
@@ -12,16 +14,14 @@ investing in a larger identity/admin platform.
 ## What it does
 
 - Parses a CSV of user access records entirely in the browser — a pasted or
-  dropped CSV never leaves your machine. (Google Workspace sync, described
-  below, is a separate, optional path that does talk to Google's API.)
+  dropped CSV never leaves your machine. (Google Workspace and Microsoft Entra ID sync, described below, are separate, optional paths that do talk to those providers' APIs.)
 - **Generate Mock Data** button produces a fresh, randomized 500-row CSV on
   every click — no real data required to see the tool work at realistic
-  scale. The generated data deliberately includes the same messy edge cases
-  covered in testing (blank/unparseable dates, blank MFA fields, role values
-  with stray whitespace, non-numeric/negative costs, missing SCIM ID,
-  department, or manager, and a few duplicate emails), so a reviewer can see
-  the flagging and scoring logic handle imperfect input, not just clean demo
-  rows.
+  scale. The generated data deliberately includes messy edge cases (blank
+  or unparseable dates, blank MFA fields, role values with stray
+  whitespace, non-numeric/negative costs, missing SCIM ID, department, or
+  manager, and a few duplicate emails), so a reviewer can see the flagging
+  and scoring logic handle imperfect input, not just clean demo rows.
 - Flags:
   - **Stale admin / stale user** — no login within the configurable
     threshold (default 90 days)
@@ -45,8 +45,8 @@ This is a single static HTML file with no build step and no server.
 1. Open `index.html` in any modern browser (double-click it, or serve the
    folder with any static file host).
 2. Click **Load Demo Data** for a small 14-row sample, **Generate Mock Data**
-   for a randomized 500-row messy dataset, or paste your own CSV into the
-   **Workspace** view.
+   for a randomized 500-row messy dataset, **Connect Google Workspace** or **Connect Microsoft Entra ID**, or paste your
+   own CSV into the **Workspace** view.
 3. Click **Run Analysis**.
 4. Click **Export Report** to download a Markdown report.
 
@@ -93,28 +93,48 @@ Instead of exporting and pasting a CSV, you can click **Connect Google
 Workspace** to pull your directory live via Google's Admin SDK
 (`admin.directory.user.readonly` scope).
 
-- This uses **your own** Google OAuth Client ID — the app has no Client ID
-  of its own baked in, and no client secret is ever needed (token-model
-  OAuth, entirely in the browser).
+- Uses **your own** Google OAuth Client ID — no client secret is ever
+  needed (token-model OAuth, entirely in the browser).
 - Clicking **Connect Google Workspace** opens a small popup asking for your
-  Client ID. It's pre-filled if you've saved one before. From there you can
-  connect, change the ID, or clear it — this popup is the single entry
-  point for all of that, so there's no separate settings icon to hunt for.
-- Setup (one-time, per Google Cloud project):
+  Client ID, pre-filled if you've saved one before.
+- One-time setup, per Google Cloud project:
   1. Open the [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
   2. Create an OAuth 2.0 Client ID of type **Web application**
-  3. Add the origin you're serving this app from (e.g.
-     `http://localhost` or your hosting domain) to **Authorized JavaScript
+  3. Add the origin you're serving this app from to **Authorized JavaScript
      origins**
   4. Paste the Client ID into the popup opened by **Connect Google
      Workspace**
 - Once connected, the browser talks directly to `accounts.google.com` and
-  Google's API — there is no server of ours in the middle, and nothing
-  about your directory passes through any backend this project owns.
-- The **admin.directory.user.readonly** scope requires the connected
-  Google account to have rights to read the Workspace directory (typically
-  a Workspace admin account) and requires Admin SDK API access to be
-  enabled on that Google Cloud project.
+  Google's API — no server of ours sits in the middle.
+- Requires the connected Google account to have rights to read the
+  Workspace directory (typically a Workspace admin) and requires the Admin
+  SDK API to be enabled on that Google Cloud project.
+
+## Microsoft Entra ID sync (optional)
+
+Instead of exporting and pasting a CSV, you can click **Connect Microsoft
+Entra ID** to pull your directory live via Microsoft Graph
+(`User.Read.All`, `Directory.Read.All` scopes), using MSAL.js.
+
+- Uses **your own** Entra app registration (Client ID + Tenant ID) — no
+  client secret is ever needed (browser-only auth-code + PKCE flow via
+  MSAL).
+- Clicking **Connect Microsoft Entra ID** opens a small popup asking for
+  your Client ID and Tenant ID, pre-filled if you've saved them before.
+- One-time setup, per Entra app registration:
+  1. Open the [Azure Portal](https://portal.azure.com) → **Microsoft Entra
+     ID** → **App registrations** → **New registration**
+  2. Add a **Single-page application (SPA)** redirect URI pointing at the
+     origin you're serving this app from
+  3. Grant the delegated Microsoft Graph permissions **User.Read.All** and
+     **Directory.Read.All**, and consent as an admin
+  4. Paste the Client ID and Tenant ID into the popup opened by **Connect
+     Microsoft Entra ID**
+- Once connected, the browser talks directly to `login.microsoftonline.com`
+  and Microsoft Graph — no server of ours sits in the middle.
+- Requires the signed-in account to have rights to read the directory
+  (typically a Global Reader or similar role) and admin consent granted on
+  the app registration.
 
 ## Project structure
 
@@ -130,10 +150,10 @@ TRANSFER_NOTES.md    notes for a buyer taking this over
 
 ## Status
 
-This is a working source-code starter with demo data, not a live product.
-It has no backend, no accounts, no persistence beyond the current browser
-tab, and no customers, traffic, or revenue. It's intended to be evaluated,
-customized, and deployed by a buyer — see `TRANSFER_NOTES.md`.
+A working, self-contained access-review tool you can open and try immediately — not
+a live, hosted product. It runs entirely in the browser, has no backend, and comes
+with generated/sample data rather than any real usage history. See
+`TRANSFER_NOTES.md` for what a buyer would want to build on top of it next.
 
 ## License
 

@@ -1,67 +1,20 @@
 # Pricing Notes
 
-## Target price
+## Editions sold
 
-**$3,000–$7,000**, sold as a one-time transfer of the source code and
-accompanying materials.
+Sold as four separate Payhip variants, split by which live directory connector is included:
 
-## Why this range
+- **Scimly — Full (Google Workspace + Microsoft Entra ID)** — $999 *(this package)*: Both live directory connectors included: Google Workspace and Microsoft Entra ID.
+- **Scimly — Google Workspace edition** — $450: Google Workspace live directory connector included. No Microsoft Entra ID connector.
+- **Scimly — Microsoft Entra ID edition** — $450: Microsoft Entra ID live directory connector included. No Google Workspace connector.
+- **Scimly — Base (CSV only)** — $350: CSV import only — no live directory connectors. Paste, upload, or drag in a CSV export.
 
-- The product is a working, well-scoped starter — not a live SaaS with
-  revenue, customers, or traffic. That caps the price below anything with
-  usage proof.
-- It solves a real, narrow, recurring pain (access review / SCIM readiness)
-  for a well-defined buyer (B2B SaaS founders, IT/admin teams, compliance
-  consultants) rather than being a generic template.
-- It's immediately runnable (no build step, no server, no dependencies) and
-  ships with demo data, docs, and a report export — a buyer can evaluate it
-  in minutes, which supports the higher end of small source-code deals.
-- It includes a built-in **Generate Mock Data** button that produces a
-  randomized 500-row messy dataset in-browser, so a buyer can see the
-  readiness score, risk flags, and waste calculation work at realistic scale
-  immediately — without needing their own SCIM/HR export and without the
-  seller needing to fabricate or hand over any real-looking data.
-- It now includes a **live Google Workspace directory sync** ("Connect
-  Google Workspace"), using the buyer's own OAuth Client ID — this closes
-  the single biggest gap called out below (no live SCIM/IdP connector) and
-  is a genuine differentiator from a plain CSV-upload tool. This alone
-  supports pricing meaningfully above the bottom of the range.
-- There's still no backend, no auth for the app itself, and no persistence
-  beyond the current browser tab — a buyer wanting multi-user access or a
-  hosted product should still expect to invest engineering time there. Live
-  sync for Microsoft Entra ID / Okta is also not built yet (Google only).
-  That still caps the price below a package with those already built.
+## Rationale for tiering
 
-## Where in the range to land
+- Price the base edition close to comparable CSV-only access-review starters on the market — it competes on being cheaper and just as capable for that scope.
+- Price the single-connector editions at a real premium over base, since a working OAuth directory sync (Google Workspace token-model auth, or Microsoft Entra MSAL auth-code+PKCE) is functional depth most comparable listings don't include at all.
+- Price the full edition below the combined cost of both single-connector editions, as the expected bundling discount.
 
-- **Toward $3,000** if sold as-is, with only the files in this package and
-  no additional customization, screenshots, or positioning work from the
-  seller.
-- **Toward $5,000** if the seller adds a short screen-recorded demo (the
-  built-in **Generate Mock Data** button makes this easy to produce without
-  needing a real dataset, and a quick clip of **Connect Google Workspace**
-  demonstrates the live-sync feature), polishes the sample data with a more
-  realistic dataset, and writes a one-page pitch aimed at the specific buyer
-  segment.
-- **Toward $7,000** if the seller can also show any of: a working hosted
-  demo, interest from a specific buyer (e.g. a compliance consultant who
-  has used it), or a clear plan for the remaining backend/multi-IdP work
-  scoped out in `TRANSFER_NOTES.md`.
+## Positioning notes
 
-## What NOT to claim
-
-Do not represent this listing as having customers, revenue, recurring
-users, or production traffic — it has none. Describe it accurately as a
-pre-revenue, working source-code starter with demo data. Overstating
-traction is the single biggest risk to a smooth sale and to the buyer's
-trust after transfer.
-
-## Suggested listing framing
-
-> A lightweight, ready-to-run access-review dashboard for B2B SaaS admin
-> teams. Paste a CSV, get a readiness score and flagged risk items in
-> seconds. Includes a one-click mock-data generator so you can see it work
-> at scale before touching real data. No backend required. Ships with docs,
-> sample data, and a Markdown report export. Pre-revenue source-code
-> starter — ideal for a buyer who wants to add auth/storage and take it to
-> market, or fold it into an existing admin/compliance product.
+No live customers, revenue, or production usage back this listing — describe it plainly as a working starter kit with sample/generated demo data, not as a proven product. Avoid implying otherwise in the listing copy.

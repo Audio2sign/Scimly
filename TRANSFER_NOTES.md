@@ -10,12 +10,11 @@ Notes for whoever takes this project over after purchase.
   Data" button — this is illustrative data only, not real user records.
 - The CSV, analysis results, and generated report don't persist between
   browser sessions; closing the tab clears the workspace. There is no
-  backend to lose that data from. The one exception: if you use **Connect
-  Google Workspace**, your OAuth Client ID is saved to this browser's
-  `localStorage` so you don't have to re-enter it every time — that's the
-  only thing this app stores locally.
-- Pre-revenue. No customers, no traffic, no revenue, no signed users. Any
-  buyer materials or listings should say this plainly.
+  backend to lose that data from. The one exception: if you use **Connect Google Workspace** or **Connect Microsoft Entra ID**, the Client ID (and, for Entra, Tenant ID) is saved to this browser's `localStorage` so you don't have to re-enter it every time — that's the only thing this app stores locally.
+- Google Workspace and Microsoft Entra ID live sync are both built (OAuth token flow for Google, MSAL auth-code+PKCE for Entra — neither needs a client secret).
+- No live usage history: no signed-up customers, no traffic, no revenue.
+  Any listing or pitch for this should describe it as a ready-to-run starter
+  kit, not as a validated or in-use product.
 
 ## What's genuinely done
 
@@ -28,41 +27,10 @@ Notes for whoever takes this project over after purchase.
 - Configurable stale-days threshold and review date
 - 0–100 risk score per user and a 0–100% workspace readiness score
 - Monthly/annualized seat-waste estimate
-- Markdown report generation, in-app preview, copy-to-clipboard, and
-  download
-- **Live Google Workspace directory sync** ("Connect Google Workspace"),
-  using the user's own OAuth Client ID (token-model flow, no client secret
-  required). A single "Connect Google Workspace" button is the only entry
-  point — it opens a small popup (pre-filled if a Client ID was saved
-  before) to connect, change, or clear the saved ID. There's no separate
-  settings/gear icon anymore; that was removed in favor of this one entry
-  point once it became the only place the popup was ever opened from.
-- Four views: Dashboard, Workspace, Report, Buyer Handoff — all in one
-  `index.html`, no build tooling required
+- Markdown report export and analyzed-table CSV export
 
-## Testing notes
+## Known limitations / things worth knowing before you extend this
 
-- The scoring logic was stress-tested against a 32-row CSV deliberately
-  built with messy/edge-case input: blank and unparseable dates, quoted
-  commas, non-numeric and negative costs, mixed-case values, malformed
-  emails, short/ragged rows, and duplicate emails. No row caused a crash
-  or blanked the table.
-- One real gap was found and fixed during this testing: the "Admin no
-  MFA" flag originally only matched an explicit `no` in the `mfa` column,
-  so a *blank* MFA field on an Admin row silently passed with no flag.
-  Real SCIM/HR exports often have blank MFA fields, so this was tightened
-  to flag anything that isn't an explicit `yes`. Fixed in the current
-  `index.html` — verify this behavior is intact if you fork or rewrite
-  the scoring logic.
-- A second, same-shaped gap was found in a later round of testing: role
-  matching used an exact string match (`role === 'admin'`), so a role
-  value with a stray internal space (e.g. `"Ad min"`, a plausible
-  data-entry typo) wasn't recognized as Admin at all — meaning it silently
-  skipped both the correct risk base *and* the MFA check, even with no
-  MFA set. Fixed by normalizing away internal whitespace before matching
-  role and MFA-status role checks now share one `isAdmin` value per row,
-  so the flag and the summary counter can't drift out of sync with each
-  other. If you touch role-matching logic in a fork, re-verify this.
 - Negative and non-numeric `monthly_license_cost` values are coerced
   to $0 rather than rejected; there's no input validation that warns on
   clearly invalid cost data (e.g. `-49` or `"forty-nine"`). Worth adding
@@ -83,10 +51,7 @@ Roughly in order of typical priority:
    runs and CSVs survive a page reload and can be shared across a team.
 2. **Auth** — if more than one person on a team will use it, or if it's
    sold as a hosted product rather than handed off as source.
-3. **Okta / Microsoft Entra ID (Azure AD) live sync** — Google Workspace
-   sync is already built; the same pattern (OAuth token flow, no backend
-   required) could be extended to other IdPs for buyers whose org uses
-   something other than Google.
+3. **Okta live sync** — the same OAuth-in-browser pattern used for Google and Entra could be extended to Okta for buyers whose org uses neither.
 4. **Scheduled/recurring runs** — re-running the analysis on a cadence and
    diffing against the last run, with email or Slack alerting on new flags.
 5. **Multi-workspace support** — if sold to an agency/consultant who
